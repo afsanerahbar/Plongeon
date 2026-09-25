@@ -1,7 +1,7 @@
 # Diving Foot Placement Tracker — Findings
 
 ## Project Concept
-Charles is a varsity diver. Foot placement on the board during takeoff matters for consistency and coaching feedback. Goal: sensor hardware that measures foot placement per attempt, syncing to a mobile app that tracks history and shows consistency against the coach's recommended target.
+Foot placement on the board during takeoff matters for consistency and coaching feedback. Goal: sensor hardware that measures foot placement per attempt, syncing to a mobile app that tracks history and shows consistency against the coach's recommended target.
 
 ## Sensing Approach — Evolution
 
@@ -10,7 +10,6 @@ Charles is a varsity diver. Foot placement on the board during takeoff matters f
 3. **Industrial ultrasonic distance sensor (SICK UC20 / UM18-217, IO-Link)** — considered, then dropped. Reasonable accuracy and good noise-averaging (beam cone smooths out board texture/water droplets), but the IO-Link interface master is built for Windows/industrial PC software stacks — Raspberry Pi (ARM Linux) driver/SDK support is uncertain, adding real integration risk.
 4. **Single-axis laser displacement sensor (Micro-Epsilon optoNCDT, Keyence IL series)** — viable fallback if only forward/back distance from the board tip matters. Micron-level accuracy, avoids IO-Link risk by using analog or RS-485/Modbus RTU output instead (well-supported on Pi via `pymodbus` or an ADC HAT). Limitation: single axis only — no side-to-side centering data.
 5. **Overhead camera + ArUco fiducial marker** — selected because full foot placement is a 2D problem (forward/back **and** side-to-side centering), which a coach actually critiques. A calibrated 2D vision approach outperforms 3D depth cameras here because the board is a flat, known plane — homography calibration + fiducial marker gives sub-mm precision, better than typical stereo/ToF depth accuracy (2–5mm).
-6. **Markerless pivot (current direction)** — decided to drop the marker on the diver in favor of a phased approach (see below), keeping only fixed calibration markers on the board.
 
 ## Related Research: DiveNet (DFKI, 2023)
 Paper: *DiveNet: Dive Action Localization and Physical Pose Parameter Extraction for High Performance Training* (Murthy, Taetz, Lekhra, Stricker — IEEE Access 2023).
