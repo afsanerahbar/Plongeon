@@ -62,37 +62,55 @@ Links are plain text (not markdown-linked) since they need to be copy/pasted, no
 
 ## Step 3 — Computer Vision & Pose Detection (core of the project)
 
-10. **MediaPipe Pose Landmarker (official)** — the 33-keypoint BlazePose model, including where `heel` and `foot_index` landmarks sit.
-    https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker
-    fallback search: `mediapipe pose landmarker guide google ai edge`
+*(Reordered 2026-09-25: marker-based tracking is now the primary method — see `findings.md` "Requirement Update" — because it gives position AND orientation together, which BlazePose's landmarks alone can't do reliably to ±1°. BlazePose moves to a secondary/cross-check role.)*
 
-11. **BlazePose background** — how the model works, for context.
-    https://research.google/blog/on-device-real-time-body-pose-tracking-with-mediapipe-blazepose/
-    fallback search: `blazepose on-device real-time body pose tracking google research blog`
+10. **OpenCV ArUco marker detection & pose estimation (primary method — start here)** — detecting markers and reading their position + rotation, the core technique behind the `MarkerDetector` class.
+    https://docs.opencv.org/4.x/d5/dae/tutorial_aruco_detection.html
+    fallback search: `opencv detection of aruco markers tutorial official docs`
 
-12. **Installing MediaPipe on Raspberry Pi OS Bookworm** — required because MediaPipe is not yet compatible with the newest Pi OS (Trixie/Python 3.13); use Bookworm (Python 3.11) specifically for this.
-    https://randomnerdtutorials.com/install-mediapipe-raspberry-pi/
-    fallback search: `random nerd tutorials install mediapipe raspberry pi`
-
-    Troubleshooting thread: https://forums.raspberrypi.com/viewtopic.php?t=367296
-    fallback search: `raspberry pi forums how install mediapipe bookworm`
-
-13. **OpenCV homography** — the math that converts a detected pixel coordinate into a real-world position on the board.
+11. **OpenCV homography** — the math that converts a detected pixel coordinate (marker or landmark) into a real-world position on the board.
     Concepts: https://docs.opencv.org/4.13.0/d9/dab/tutorial_homography.html
     fallback search: `opencv basic concepts of homography tutorial`
 
     Applied example: https://docs.opencv.org/4.13.0/d1/de0/tutorial_py_feature_homography.html
     fallback search: `opencv feature matching homography python tutorial`
 
-14. **Classical CV foot segmentation (Phase 1.5 fallback, only needed if BlazePose's foot landmarks aren't precise enough)**
+12. **MediaPipe Pose Landmarker (secondary/cross-check)** — the 33-keypoint BlazePose model, including where `heel` and `foot_index` landmarks sit. Useful as a markerless position cross-check, not for the ±1° orientation requirement.
+    https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker
+    fallback search: `mediapipe pose landmarker guide google ai edge`
+
+    Background: https://research.google/blog/on-device-real-time-body-pose-tracking-with-mediapipe-blazepose/
+    fallback search: `blazepose on-device real-time body pose tracking google research blog`
+
+    Installing on Raspberry Pi OS Bookworm (required — MediaPipe isn't yet compatible with the newest Pi OS/Trixie/Python 3.13): https://randomnerdtutorials.com/install-mediapipe-raspberry-pi/
+    fallback search: `random nerd tutorials install mediapipe raspberry pi`
+
+    Troubleshooting thread: https://forums.raspberrypi.com/viewtopic.php?t=367296
+    fallback search: `raspberry pi forums how install mediapipe bookworm`
+
+13. **Classical CV foot segmentation + orientation (Phase 1.5 markerless cross-check)**
     Background subtraction: https://docs.opencv.org/3.4.20/d8/d38/tutorial_bgsegm_bg_subtraction.html
     fallback search: `opencv background subtraction tutorial official docs`
 
-    Contour properties: https://docs.opencv.org/4.x/d1/d32/tutorial_py_contour_properties.html
-    fallback search: `opencv contour properties tutorial extreme points`
+    Contour properties + `fitEllipse` (for position and orientation): https://docs.opencv.org/4.13.0/d1/d32/tutorial_py_contour_properties.html
+    fallback search: `opencv contour properties fitEllipse tutorial`
 
-    Worked example: https://pyimagesearch.com/2016/04/11/finding-extreme-points-in-contours-with-opencv/
+    PCA-based orientation (alternative to fitEllipse): https://docs.opencv.org/3.4/d1/dee/tutorial_introduction_to_pca.html
+    fallback search: `opencv introduction to pca orientation tutorial`
+
+    Worked example (extreme points): https://pyimagesearch.com/2016/04/11/finding-extreme-points-in-contours-with-opencv/
     fallback search: `pyimagesearch finding extreme points in contours with opencv`
+
+---
+
+## Step 4 — Software Design (for implementing the class architecture)
+
+14. **Python abstract base classes / interfaces** — needed to implement the `FootDetector` interface from the SOLID-revised class design, so `MarkerDetector`/`PoseDetector`/future detectors are swappable without editing `CaptureService`.
+    Official: https://docs.python.org/3/library/abc.html
+    fallback search: `python docs abc abstract base classes`
+
+    Friendlier walkthrough (ABCs vs. Protocols): https://realpython.com/python-interface/
+    fallback search: `real python implementing interfaces abcs and protocols`
 
 ---
 
