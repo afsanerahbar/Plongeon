@@ -1,9 +1,5 @@
 # Reading List — Step-by-Step Prep Order
 
-For Charles (no prior Raspberry Pi / programming experience) working toward building the diving foot-placement tracker described in `findings.md`. Work through these roughly in order — later steps assume earlier ones are comfortable, not just skimmed.
-
-Links are plain text (not markdown-linked) since they need to be copy/pasted, not clicked. A fallback search term is given for each in case a URL has moved.
-
 ---
 
 ## Step 0 — Absolute Beginner (start here if you've never used a Pi before)
