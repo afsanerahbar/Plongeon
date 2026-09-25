@@ -114,6 +114,31 @@ Links are plain text (not markdown-linked) since they need to be copy/pasted, no
 
 ---
 
+## Step 5 — Database (Supabase, finalized 2026-09-25 over Firebase)
+
+*Chosen over Firebase because our data model (Athlete, Session, CoachTarget, Attempt, linked by `diver_id`/`session_id`) is relational — Supabase is hosted Postgres with an auto-generated API, a natural fit for foreign-key relationships and joins, unlike Firestore's NoSQL document model.*
+
+15. **Getting Started (official)** — Supabase overview and core concepts.
+    https://supabase.com/docs/guides/getting-started
+    fallback search: `supabase docs getting started`
+
+16. **Python client (`supabase-py`)** — what the Pi's `CloudSyncClient` will actually use to upload records.
+    https://supabase.com/docs/guides/getting-started/quickstarts/flask
+    fallback search: `supabase python quickstart flask`
+
+    Reference: https://github.com/supabase-community/supabase-py/blob/main/README.md
+    fallback search: `supabase-py python client github readme`
+
+17. **Storage Quickstart** — for uploading attempt thumbnails/clips.
+    https://supabase.com/docs/guides/storage/quickstart
+    fallback search: `supabase storage quickstart`
+
+18. **Realtime API** — powers the app's live-session view (new attempts appearing during practice). Note: in Python, Realtime only works with the async client (`acreate_client()`).
+    https://supabase.com/docs/reference/python/realtime-api
+    fallback search: `supabase python realtime api reference`
+
+---
+
 ## Optional Background Reading
 - **DiveNet paper** (Murthy et al., IEEE Access 2023) — the closest published research to this project (static camera + per-dive homography for physical parameter extraction). No usable open-source code or dataset was found (see `findings.md`), so this is conceptual background only, not something to install.
   fallback search: `DiveNet dive action localization physical pose parameter extraction`

@@ -205,7 +205,7 @@ Out of stock at **three separate retailers checked so far**: Adafruit (CS Lens M
 - Thumbnail/clip included so the coach can visually sanity-check a reading, not just trust a number.
 
 ### Sync: Pi → App
-- **Cloud sync recommended** (Supabase or Firebase) over local-network-only — enables review of history/consistency from anywhere, not just poolside. Pi buffers locally and syncs when Wi-Fi is available.
+- **Cloud sync recommended** (Supabase) over local-network-only — enables review of history/consistency from anywhere, not just poolside. Pi buffers locally and syncs when Wi-Fi is available.
 
 ### Mobile App
 - Live/session view (attempts appear near real-time during practice).
@@ -216,7 +216,7 @@ Out of stock at **three separate retailers checked so far**: Adafruit (CS Lens M
 
 ### Stack
 - **App:** React Native or Flutter (cross-platform).
-- **Backend:** Supabase or Firebase (DB, real-time sync, thumbnail/clip storage).
+- **Backend:** Supabase (Postgres) (DB, real-time sync, thumbnail/clip storage).
 - **Pi:** Python (MediaPipe/OpenCV native), run as a `systemd` service for auto-restart/boot persistence.
 
 ## Raspberry Pi: Prerequisites to Learn First
@@ -235,7 +235,7 @@ Out of stock at **three separate retailers checked so far**: Adafruit (CS Lens M
 Principle: **Pi senses, Cloud stores, Phone computes/presents.**
 
 - **Raspberry Pi:** camera capture (ROI-cropped), pose model inference (foot keypoint), liftoff-detection logic, homography transform (pixel → real-world mm), thumbnail generation, local SQLite buffering + retry-upload.
-- **Cloud (Supabase/Firebase):** passive data store only — raw attempt records, coach target/tolerance settings, thumbnail/clip file storage, real-time sync to the app. No image processing or math happens here.
+- **Cloud (Supabase):** passive data store only — raw attempt records, coach target/tolerance settings, thumbnail/clip file storage, real-time sync to the app. No image processing or math happens here.
 - **Phone App:** fetches raw position + target data; computes deviation-from-target **at display time** (not baked in at capture), so retroactive target changes recalculate historical charts correctly; owns all dashboards/visualization and the coach's target-editing UI.
 - Rationale: the Pi shouldn't need to know about coaching targets — it only reports foot position. Keeps sensing code simple/testable in isolation and lets coaching logic evolve without touching the Pi.
 
@@ -262,7 +262,7 @@ An initial class sketch was reviewed against SOLID principles; this is the corre
 | **CloudSyncClient** | `api_url`, `api_key` | `upload(record) → bool`, `upload_thumbnail(path) → url`, `is_online()` |
 | **CaptureService** (orchestrator, constructor-injected) | `detector: FootDetector`, `calibration: CalibrationManager`, `event_detector: AttemptEventDetector`, `thumbnail_generator: ThumbnailGenerator`, `buffer: LocalBuffer`, `sync_client: CloudSyncClient` | `run()` — main loop, the `systemd` service entrypoint. Dependencies are injected, not instantiated internally, so swapping `MarkerDetector` ↔ `PoseDetector` ↔ a future custom-model detector requires zero changes to this class |
 
-### Backend data model (Supabase/Firebase)
+### Backend data model (Supabase)
 
 | Entity | Fields |
 |---|---|
