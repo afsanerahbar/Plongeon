@@ -239,6 +239,53 @@ Principle: **Pi senses, Cloud stores, Phone computes/presents.**
 - **Phone App:** fetches raw position + target data; computes deviation-from-target **at display time** (not baked in at capture), so retroactive target changes recalculate historical charts correctly; owns all dashboards/visualization and the coach's target-editing UI.
 - Rationale: the Pi shouldn't need to know about coaching targets — it only reports foot position. Keeps sensing code simple/testable in isolation and lets coaching logic evolve without touching the Pi.
 
+## Software Architecture: Classes & Components (revised 2026-09-25 for SOLID)
+
+An initial class sketch was reviewed against SOLID principles; this is the corrected version. Key fixes from the review: extracted thumbnail generation out of the data record (SRP), introduced a `FootDetector` interface so detection methods are swappable without touching the orchestrator (OCP/DIP), and made the orchestrator receive its dependencies via constructor injection rather than instantiating them internally (DIP, testability).
+
+### Pi-side software (Python)
+
+**`FootDetector` (abstract interface)** — `detect(frame) → list[FootMeasurement]`. All detection methods implement this so `CaptureService` depends on the abstraction, not concrete classes; adding a new detection method (e.g. the Phase 1.5 custom-trained model) means adding a new implementing class, not editing the orchestrator. Implementations must agree on how they signal "no foot detected" (empty list, not an exception) so they're truly substitutable (Liskov).
+
+| Class | Fields | Functionality |
+|---|---|---|
+| **MarkerDetector** `implements FootDetector` | `dictionary`, `marker_ids_by_foot` (e.g. `{left: 12, right: 13}`) | `detect(frame) → list[FootMeasurement]` via ArUco corner detection |
+| **PoseDetector** `implements FootDetector` | `model`, `confidence_threshold` | `detect(frame) → list[FootMeasurement]` via BlazePose heel/foot_index landmarks |
+| **FootMeasurement** (value object) | `foot_side`, `position_mm {x,y}`, `angle_deg`, `confidence`, `source` | Plain data container; no behavior |
+| **CalibrationManager** (pure geometry — split from persistence) | `homography_matrix`, `board_reference_points_px`, `board_reference_points_mm` | `calibrate(reference_points)`, `pixel_to_world(x_px, y_px) → (x_mm, y_mm)` |
+| **CalibrationStore** (persistence — split out) | `file_path` | `save(calibration_data)`, `load() → calibration_data` |
+| **CameraCapture** | `resolution`, `frame_rate`, `roi_bounds` | `start()`, `stop()`, `get_frame()`, `crop_to_roi(frame)` |
+| **AttemptEventDetector** | `presence_threshold_frames`, `state` (idle/tracking) | `process_frame(frame) → Optional[AttemptTrigger]` — watches ROI for foot presence→absence, returns the last valid contact frame |
+| **ThumbnailGenerator** (extracted from AttemptRecord — SRP fix) | `overlay_style` | `generate(frame, measurements) → thumbnail_path` — draws detected keypoints/markers on the frame |
+| **AttemptRecord** (pure data — no behavior) | `attempt_id, timestamp, session_id, diver_id, dive_type, left_foot, right_foot, thumbnail_path, clip_path` | `to_dict()` only |
+| **LocalBuffer** (SQLite) | `db_path` | `save(record)`, `get_unsynced()`, `mark_synced(attempt_id)` |
+| **CloudSyncClient** | `api_url`, `api_key` | `upload(record) → bool`, `upload_thumbnail(path) → url`, `is_online()` |
+| **CaptureService** (orchestrator, constructor-injected) | `detector: FootDetector`, `calibration: CalibrationManager`, `event_detector: AttemptEventDetector`, `thumbnail_generator: ThumbnailGenerator`, `buffer: LocalBuffer`, `sync_client: CloudSyncClient` | `run()` — main loop, the `systemd` service entrypoint. Dependencies are injected, not instantiated internally, so swapping `MarkerDetector` ↔ `PoseDetector` ↔ a future custom-model detector requires zero changes to this class |
+
+### Backend data model (Supabase/Firebase)
+
+| Entity | Fields |
+|---|---|
+| **Athlete** | `diver_id, name, foot_length_mm, foot_width_mm, marker_placement_photo_url, created_at` |
+| **Session** | `session_id, diver_id, date, location, coach_notes` |
+| **CoachTarget** | `target_id, diver_id, dive_type, left_target {x_mm,y_mm,angle_deg}, right_target {x_mm,y_mm,angle_deg}, tolerance_radius_mm, tolerance_angle_deg, active_from` |
+| **Attempt** | server-side mirror of `AttemptRecord` above |
+
+**DRY note:** `AttemptRecord` (Pi-side) and `Attempt` (backend) are independently-defined mirrors of each other — legitimate, since the Pi-side has local file paths where the backend has URLs, but worth defining as a shared schema/contract deliberately rather than letting the two drift out of sync by accident over time.
+
+### Mobile app (client-side)
+
+| Class | Functionality |
+|---|---|
+| **AttemptRepository** | `fetchHistory(diverId, filters)`, `subscribeLive(sessionId, onUpdate)` |
+| **AthleteProfileRepository** | `getProfile(diverId)`, `updateProfile(profile)` |
+| **CoachTargetRepository** | `getTarget(diverId, diveType)`, `setTarget(target)` |
+| **DeviationCalculator** | `computeDeviation(attempt, target) → {deviation_mm, deviation_angle_deg, within_tolerance}` — computed **at display time**, not stored, so retroactive target edits recalculate history correctly |
+| **ConsistencyDashboardViewModel** | `refresh()`, `filterByDiveType()` — feeds scatter/trend-chart views, computes mean deviation / % within tolerance / std dev |
+| **LiveSessionViewModel** | Real-time feed during practice, subscribes to new synced attempts |
+| **CoachTargetEditorViewModel** | Create/edit target position + angle + tolerance per dive type |
+| **AthleteProfileViewModel** | View/edit foot dimensions and marker-placement reference photo |
+
 ## Reading List
 - [The Raspberry Pi Guide — headless setup](https://raspberrypi-guide.github.io/getting-started/raspberry-pi-headless-setup)
 - [Raspberry Pi official docs — Camera software (libcamera/rpicam-hello)](https://www.raspberrypi.com/documentation/computers/camera_software.html)
