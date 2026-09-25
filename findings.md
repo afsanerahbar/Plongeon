@@ -22,7 +22,28 @@ Paper: *DiveNet: Dive Action Localization and Physical Pose Parameter Extraction
   - *COM trajectory (~6px) and peak height (~20cm sensitivity)* come from tracking across the **entire dive** (approach through flight) and fitting a projectile-motion curve to it — a multi-frame, compounding-error task, harder than ours. These numbers are **not** a fair ceiling for our accuracy.
   - *2D joint keypoints (~70% PCK, ~10° mean joint angle error)* is **per-frame keypoint localization** — the same underlying task category we depend on (finding heel/foot_index in one well-defined frame). This is the more directly relevant number, though we should still expect to do better: we control calibration and camera placement (fixed, close, purpose-mounted) far more tightly than DiveNet's more general capture setup. The Phase 1 validation test (below) will give our actual number rather than borrowing DiveNet's.
 
+## Requirement Update (2026-09-25): Both Feet + Orientation (±1°)
+
+- **Both feet must be tracked**, not just one — a relatively easy addition, since BlazePose already reports landmarks for both feet in one frame, and marker-based tracking just means two markers (one per foot) instead of one.
+- **Foot orientation (toe-pointing angle) matters, to within 1°** — a much harder requirement than position alone, and it changes which method should be primary.
+  - **Why 1° is hard:** orientation isn't measured directly — it's derived from two points (e.g., heel and toe), by computing the angle between them. For a ~270mm-long foot, resolving 1° of rotation means detecting the toe point shifting sideways relative to the heel by only ~5mm — and reliably detecting a 1° change needs the underlying point measurements accurate to roughly 1mm. Two independently-estimated points each carrying their own noise compound when subtracted to get an angle.
+  - **This rules out markerless BlazePose landmarks as the primary method for orientation** — a general-purpose human pose model isn't reliable to ~1mm per point in a steep, oblique camera angle, so the derived angle would be noisy well beyond ±1°. Fine for a rough position starting point, not for this angular tolerance.
+  - **⚠️ Correction: divers are barefoot, not shod.** Earlier phases in this doc describe markers "on the shoe/heel" — competitive diving is performed barefoot, so any physical marker needs to go directly on bare skin (small waterproof adhesive tags at a fixed anatomical point, e.g., base of the big toe and the heel) — the same technique used for skin-mounted motion-capture markers in sports biomechanics. Feasible, just a different application method than a shoe sticker.
+
+### Two approaches that can actually hit 1° — both worth pursuing
+1. **ArUco marker per foot (2 markers, one per foot, on bare skin)** — elevated from "Phase 2 fallback" to the **primary recommended method**, specifically because of the orientation requirement. A detected ArUco marker's 4 corners give **position AND rotation together** in one reading, with sub-degree accuracy achievable via standard corner-based pose estimation (well-established in robotics/AR tracking) — a fundamentally better fit for an angle requirement than deriving an angle from two separately-estimated landmark points.
+2. **Classical CV: fit an ellipse/principal axis to each foot's silhouette** (via background subtraction + `cv2.fitEllipse` or PCA on the segmented blob) — averages over many contributing edge pixels rather than two noisy point estimates, which can give stable orientation. Worth running as a markerless cross-check alongside the marker approach, not as a replacement for it.
+
+## Athlete Profile (added 2026-09-25)
+Lightweight per-athlete profile, needed to support the marker-based approach and data quality generally — not a strict requirement for the core measurement to function, but genuinely useful:
+- **Foot length and width** — enables a personal offset correction (detected marker/landmark position → true contact edge) and outlier rejection (a wildly different implied foot size flags a bad detection).
+- **Reference photo of marker placement** — keeps skin-marker application consistent session to session, so measured inconsistency reflects the diver's actual foot placement, not drift in where the marker was glued that day.
+- **Scope:** just length, width, and a placement reference photo — no full 3D scan or shape model needed.
+- **Data model note:** the per-attempt record schema (see Data Pipeline section below) now includes a `diver_id` field — the athlete profile is a natural extension of that, and sets up clean support for multiple athletes later without a redesign.
+
 ## Recommended Solution: Overhead Global Shutter Camera, Phased Marker Strategy
+
+*(Note: given the orientation requirement above, treat the marker-based approach — described here as "Phase 2" — as the primary method, not a last-resort fallback. Phase 1/1.5 markerless approaches remain useful for position-only validation and cross-checking.)*
 
 **Phase 1 (start here) — markerless:**
 - **Camera:** Raspberry Pi Global Shutter Camera — global shutter is essential to avoid motion blur/distortion from the fast-moving foot at takeoff (rolling shutter cameras would smear the reading).
@@ -38,11 +59,12 @@ Paper: *DiveNet: Dive Action Localization and Physical Pose Parameter Extraction
   - This is really a **vision/keypoint model**, not an "LLM" in the generative-text sense — worth keeping the terminology straight since it determines which tooling applies (e.g. TensorFlow/PyTorch fine-tuning workflows, not language-model fine-tuning).
   - Legitimate independent-study extension in its own right (data collection, labeling, fine-tuning, deployment is a real curriculum arc), not just an accuracy trick — worth documenting in the funding narrative if Charles wants to take this on.
 
-**Phase 2 (fallback, only if Phase 1/1.5 accuracy falls short):**
-- Add an ArUco marker sticker back onto the diver's heel/shoe for sub-pixel, sub-mm precise tracking via OpenCV.
-- Camera, mount, and board calibration markers are unchanged — this is a pure accuracy upgrade to the foot-detection step, not a redesign.
+**Phase 2 (now the primary method, given the ±1° orientation requirement):**
+- Two ArUco markers, one per foot, applied directly to bare skin (waterproof adhesive, fixed anatomical placement per the athlete profile above) — not shoe stickers, since diving is barefoot.
+- Gives position **and** orientation together per foot, sub-pixel/sub-mm position and sub-degree rotation via OpenCV's ArUco corner detection.
+- Camera, mount, and board calibration markers are unchanged from the original plan — this is a change to the foot-detection step, not the camera/mounting design.
 
-- **Output (either phase):** Real-world (X, Y) foot position in millimeters on both axes, directly comparable to the coach's target position + tolerance radius.
+- **Output:** per foot, real-world (X, Y) position in millimeters **and** orientation in degrees, both directly comparable to the coach's target position/angle + tolerance.
 
 ### Mounting
 - Mount on the board's **handrails**, not the board plank itself — handrails are bolted to the fixed stand, not the flexing plank, so they don't move with the diver's bounce.
@@ -179,7 +201,7 @@ Out of stock at **three separate retailers checked so far**: Adafruit (CS Lens M
 ### On-Pi: Capture → Detect → Package
 - Crop camera feed to the calibrated takeoff-zone ROI; watch for the foot keypoint (Phase 1: pose model) or marker (Phase 2) to appear then disappear.
 - Log position from the **last valid contact frame** (moment before liftoff) as that attempt's reading — no manual "start" trigger needed.
-- Per-attempt record: `attempt_id, timestamp, session_id, dive_type, foot_position {x_mm, y_mm}, detection_confidence, coach_target {x_mm, y_mm, tolerance_radius_mm}, deviation_mm, thumbnail (frame w/ keypoint overlay), short_clip_ref (optional)`.
+- Per-attempt record (updated 2026-09-25 for both feet + orientation): `attempt_id, timestamp, session_id, diver_id, dive_type, left_foot {x_mm, y_mm, angle_deg}, right_foot {x_mm, y_mm, angle_deg}, detection_confidence, coach_target {x_mm, y_mm, angle_deg, tolerance_radius_mm, tolerance_angle_deg} (per foot), deviation_mm, deviation_angle_deg, thumbnail (frame w/ keypoint/marker overlay), short_clip_ref (optional)`.
 - Thumbnail/clip included so the coach can visually sanity-check a reading, not just trust a number.
 
 ### Sync: Pi → App
