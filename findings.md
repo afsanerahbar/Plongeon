@@ -287,6 +287,42 @@ An initial class sketch was reviewed against SOLID principles; this is the corre
 | **CoachTargetEditorViewModel** | Create/edit target position + angle + tolerance per dive type |
 | **AthleteProfileViewModel** | View/edit foot dimensions and marker-placement reference photo |
 
+## Pi-Side Class Spec — Draft (2026-10-01)
+
+*Draft: field/method-level detail for the 13 Pi-side classes (the component-card grid in `pi-side-design.html` undercounts this as "eleven" — fix pending), each with a one-line purpose statement. Subject to change once implementation starts.*
+
+**Interface & implementations**
+
+- **`FootDetector`** *(interface)* — Purpose: defines the one contract any foot-detection method must satisfy, so detection techniques swap without touching the orchestrator. Fields: none. Methods: `detect(frame) → list[FootMeasurement]`.
+- **`MarkerDetector`** *(implements FootDetector)* — Purpose: detects the two ArUco markers (one per foot) and reports position + rotation together — the primary detection method. Fields: `dictionary`, `marker_ids_by_foot` (e.g. `{left: 12, right: 13}`). Methods: `detect(frame) → list[FootMeasurement]`.
+  - **`dictionary` explained:** the specific ArUco marker dictionary (`cv2.aruco`) used to recognize/decode marker IDs — a predefined family of binary square marker patterns (e.g. `DICT_4X4_50` = 4×4-bit grid, 50 unique IDs), not a Python dict. Trade-off: more bits (6×6, 7×7) = more IDs and better false-positive rejection but needs the marker to occupy more pixels to read; fewer bits (4×4, 5×5) = marker can be physically smaller and still decode reliably. **Recommended: `DICT_4X4_50`** — markers go on bare skin (want them small), and the project only needs ~8 unique IDs total (2 feet + up to 6 board calibration markers), well under the 50-ID capacity, so there's no reason to pay the size cost of a bigger dictionary.
+- **`PoseDetector`** *(implements FootDetector)* — Purpose: detects BlazePose heel/foot_index landmarks as a markerless position cross-check. Fields: `model`, `confidence_threshold`. Methods: `detect(frame) → list[FootMeasurement]`.
+
+**Value objects (data only, no behavior)**
+
+- **`FootMeasurement`** — Purpose: carries one foot's detected position and angle between the detector and everything downstream. Fields: `foot_side`, `position_mm {x, y}`, `angle_deg`, `confidence`, `source`. Methods: none.
+- **`AttemptRecord`** — Purpose: carries everything about one completed attempt as plain data, ready to store or upload. Fields: `attempt_id, timestamp, session_id, diver_id, dive_type, left_foot, right_foot, thumbnail_path, clip_path`. Methods: `to_dict()`.
+
+**Geometry & calibration**
+
+- **`CalibrationManager`** — Purpose: converts a pixel coordinate into a real-world board coordinate — pure math, nothing else. Fields: `homography_matrix`, `board_reference_points_px`, `board_reference_points_mm`. Methods: `calibrate(reference_points)`, `pixel_to_world(x_px, y_px) → (x_mm, y_mm)`.
+- **`CalibrationStore`** — Purpose: persists and retrieves calibration data to/from disk, so CalibrationManager never touches file I/O. Fields: `file_path`. Methods: `save(calibration_data)`, `load() → calibration_data`.
+
+**Capture & event logic**
+
+- **`CameraCapture`** — Purpose: owns the camera/libcamera interface — the only class that talks to the hardware directly. Fields: `resolution`, `frame_rate`, `roi_bounds`. Methods: `start()`, `stop()`, `get_frame() → Frame`, `crop_to_roi(frame) → Frame`.
+- **`AttemptEventDetector`** — Purpose: watches the stream of per-frame measurements and decides when one dive attempt happened, returning the best (last-contact) frame. Fields: `presence_threshold_frames`, `state`. Methods: `process_frame(measurements) → Optional[AttemptTrigger]`.
+- **`ThumbnailGenerator`** — Purpose: produces a human-reviewable overlay image per attempt, so a coach can sanity-check a reading instead of trusting a bare number. Fields: `overlay_style`. Methods: `generate(frame, measurements) → thumbnail_path`.
+
+**Storage & sync**
+
+- **`LocalBuffer`** — Purpose: holds attempt records on local disk so nothing is lost if Wi-Fi drops, until confirmed uploaded. Fields: `db_path`. Methods: `save(record)`, `get_unsynced() → list[AttemptRecord]`, `mark_synced(attempt_id)`.
+- **`CloudSyncClient`** — Purpose: owns the network conversation with Supabase — the only class that knows how to reach the cloud. Fields: `api_url`, `api_key`. Methods: `upload(record) → bool`, `upload_thumbnail(path) → url`, `is_online() → bool`.
+
+**Orchestrator**
+
+- **`CaptureService`** — Purpose: runs the main loop and coordinates every other class via injected dependencies — the one place that knows the full sequence, so nothing else needs to. Fields: `detector: FootDetector`, `calibration: CalibrationManager`, `event_detector: AttemptEventDetector`, `thumbnail_generator: ThumbnailGenerator`, `buffer: LocalBuffer`, `sync_client: CloudSyncClient`. Methods: `run()`.
+
 ## Reading List
 - [The Raspberry Pi Guide — headless setup](https://raspberrypi-guide.github.io/getting-started/raspberry-pi-headless-setup)
 - [Raspberry Pi official docs — Camera software (libcamera/rpicam-hello)](https://www.raspberrypi.com/documentation/computers/camera_software.html)
