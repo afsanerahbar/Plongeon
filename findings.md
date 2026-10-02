@@ -242,6 +242,8 @@ Principle: **Pi senses, Cloud stores, Phone computes/presents.**
 
 An initial class sketch was reviewed against SOLID principles; this is the corrected version. Key fixes from the review: extracted thumbnail generation out of the data record (SRP), introduced a `FootDetector` interface so detection methods are swappable without touching the orchestrator (OCP/DIP), and made the orchestrator receive its dependencies via constructor injection rather than instantiating them internally (DIP, testability).
 
+**Visual design doc (Pi side, 2026-10-01):** class diagram, three call sequences (detection loop, attempt packaging & sync, calibration), and the bottom-up build order — `pi-side-design.html` in this repo, published at https://claude.ai/artifact/WgcJtuM2NdzgV3FbFQs9vv
+
 ### Pi-side software (Python)
 
 **`FootDetector` (abstract interface)** — `detect(frame) → list[FootMeasurement]`. All detection methods implement this so `CaptureService` depends on the abstraction, not concrete classes; adding a new detection method (e.g. the Phase 1.5 custom-trained model) means adding a new implementing class, not editing the orchestrator. Implementations must agree on how they signal "no foot detected" (empty list, not an exception) so they're truly substitutable (Liskov).
