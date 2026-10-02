@@ -1,6 +1,6 @@
 <title>Pi Capture Design</title>
 <style>
-  /* layout: single-column technical reference — component cards, SVG class diagram, three SVG sequence diagrams, ordered build plan */
+  /* layout: single-column technical reference — phase plan, grouped component cards, SVG class diagram, four SVG sequence diagrams, Phase 1 build order */
   :root{
     --bg:#f4f6f8; --surface:#ffffff; --fg:#17212c; --fg-muted:#56687a;
     --accent:#1f5aa8; --accent-soft:#e7eef7; --border:#d7dee5;
@@ -26,20 +26,31 @@
   .wrap{max-width:980px; margin:0 auto;}
   h1{font-weight:600; font-size:clamp(1.5rem,4vw,2.1rem); letter-spacing:-0.01em; text-wrap:balance; margin:0 0 6px;}
   .subtitle{color:var(--fg-muted); font-size:0.98rem; max-width:65ch; margin:0 0 36px;}
-  h2{font-size:1.15rem; font-weight:600; margin:0 0 4px; padding-top:4px; text-wrap:balance;}
+  h2{font-size:1.15rem; font-weight:600; margin:0 0 4px; text-wrap:balance;}
+  h3{font-size:0.78rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--fg-muted); font-weight:600; margin:22px 0 10px;}
   .section-note{color:var(--fg-muted); font-size:0.92rem; max-width:68ch; margin:0 0 18px;}
   section{margin-bottom:56px;}
   code{font-family:'IBM Plex Mono',monospace; font-size:0.92em;}
 
-  .card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px;}
-  .card{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; min-width:0;}
-  .card .name{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.95rem; margin-bottom:4px; display:block; overflow-wrap:anywhere;}
-  .card .tag{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:0.68rem; letter-spacing:0.04em; text-transform:uppercase; color:var(--fg-muted); border:1px solid var(--border); border-radius:4px; padding:1px 6px; margin-bottom:8px;}
+  .phases{display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:12px;}
+  .phase{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; min-width:0; display:flex; flex-direction:column; gap:6px;}
+  .phase .ph-head{display:flex; align-items:baseline; gap:10px;}
+  .phase .ph-num{font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--accent); font-size:0.9rem;}
+  .phase .ph-title{font-weight:600;}
+  .phase p{margin:0; font-size:0.86rem; line-height:1.45; color:var(--fg-muted);}
+  .phase .exit{color:var(--fg); border-top:1px solid var(--border); padding-top:6px; margin-top:2px;}
+  .phase .exit b{color:var(--gate); font-weight:600;}
+  .phase.optional{border-style:dashed;}
+
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px;}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 14px; min-width:0;}
+  .card .name{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.92rem; margin-bottom:4px; display:block; overflow-wrap:anywhere;}
+  .card .tag{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:0.66rem; letter-spacing:0.04em; text-transform:uppercase; color:var(--fg-muted); border:1px solid var(--border); border-radius:4px; padding:1px 6px; margin-bottom:6px;}
   .card.iface{border-color:var(--iface);} .card.iface .tag{color:var(--iface); border-color:var(--iface);}
   .card.data{border-style:dashed; border-color:var(--data);} .card.data .tag{color:var(--data); border-color:var(--data);}
   .card.core{border-color:var(--accent);} .card.core .tag{color:var(--accent); border-color:var(--accent);}
   .card.script{border-style:dotted;}
-  .card p{margin:0; font-size:0.86rem; color:var(--fg-muted); line-height:1.45;}
+  .card p{margin:0; font-size:0.84rem; color:var(--fg-muted); line-height:1.45;}
 
   figure{margin:0; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px 14px 12px; overflow-x:auto;}
   figure + figure{margin-top:20px;}
@@ -53,8 +64,7 @@
   .box-iface{stroke:var(--iface);}
   .box-data{stroke:var(--data); stroke-dasharray:5 3;}
   .box-core{stroke:var(--accent); stroke-width:2;}
-  .box-script{stroke:var(--fg-muted); stroke-dasharray:2 3;}
-  .t-iface{fill:var(--iface);} .t-data{fill:var(--data);} .t-core{fill:var(--accent);}
+  .t-iface{fill:var(--iface);} .t-core{fill:var(--accent);}
   .edge{stroke:currentColor; stroke-width:1.4; fill:none;}
   .edge-dashed{stroke:currentColor; stroke-width:1.2; fill:none; stroke-dasharray:4 3; opacity:0.85;}
   .edge-label{font-size:11px; fill:var(--fg-muted);}
@@ -64,196 +74,232 @@
   .frame-box{fill:none; stroke:var(--border); stroke-dasharray:2 3;}
   .divider{stroke:var(--fg-muted); stroke-width:1; stroke-dasharray:6 4;}
 
-  .milestone{font-size:0.75rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--accent); font-weight:600; margin:28px 0 10px;}
-  .milestone:first-of-type{margin-top:0;}
   ol.build-order{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;}
   ol.build-order li{position:relative; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 16px 12px 46px;}
   ol.build-order li .num{position:absolute; left:12px; top:12px; width:22px; height:22px; border-radius:50%; background:var(--accent); color:var(--surface); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; font-weight:600; display:flex; align-items:center; justify-content:center; font-variant-numeric:tabular-nums;}
   ol.build-order li.gate{border-color:var(--gate);}
   ol.build-order li.gate .num{background:var(--gate);}
-  .step-name{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.95rem; display:block; margin-bottom:3px;}
+  .step-name{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.93rem; display:block; margin-bottom:3px;}
   .step-why{font-size:0.86rem; color:var(--fg-muted); line-height:1.45;}
+  .later{margin:16px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px; font-size:0.88rem;}
+  .later li{color:var(--fg-muted);}
+  .later b{color:var(--fg); font-weight:600;}
 </style>
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 
 <div class="wrap">
   <h1>Pi-Side Capture Design</h1>
-  <p class="subtitle">Components, class relationships, runtime call sequences, and build order for the Raspberry Pi half of the diving foot-placement tracker — capture a frame, find four markers (heel and toe on each foot), convert to board millimeters and foot angle, then package and sync each attempt.</p>
+  <p class="subtitle">The Raspberry Pi half of the diving foot-placement tracker: find four markers (heel and toe on each foot), convert them to board millimeters and foot angles, and record each attempt. Built in phases, offline first: prove the measurement on recorded clips, then go live.</p>
+
+  <section>
+    <h2>Phases</h2>
+    <p class="section-note">Risk-first: the hard questions (markers on wet skin, pool lighting, mount angle, ±1° at the pool) are answered in Phase 0. Each phase ends with something the coach can use and a test that decides whether to continue.</p>
+    <div class="phases">
+      <div class="phase"><div class="ph-head"><span class="ph-num">0</span><span class="ph-title">Feasibility · 1–2 weeks</span></div>
+        <p>Pi, camera, and printed markers on a temporary mount, powered by a USB-C power bank. Record clips at the bench and in one pool session; analyze them in a notebook on a laptop.</p>
+        <p class="exit"><b>Exit:</b> bench angle error under 1°; markers survive 10+ water entries; detected in pool light; the mount shows the whole takeoff zone at a steep angle.</p></div>
+      <div class="phase"><div class="ph-head"><span class="ph-num">1</span><span class="ph-title">Offline pipeline</span></div>
+        <p>The Pi records a short clip per attempt during practice. Afterward the clips run through the pipeline: CSV, thumbnails, and a one-page session report.</p>
+        <p class="exit"><b>Exit:</b> the coach gets per-attempt numbers after each practice; repeated readings of the same planted foot agree within 0.5°.</p></div>
+      <div class="phase"><div class="ph-head"><span class="ph-num">2</span><span class="ph-title">Cloud + simple dashboard</span></div>
+        <p>Supabase tables; results upload after processing; a Streamlit dashboard shows history and consistency, and the coach edits targets there.</p>
+        <p class="exit"><b>Exit:</b> the coach views trends from anywhere and sets targets.</p></div>
+      <div class="phase"><div class="ph-head"><span class="ph-num">3</span><span class="ph-title">Real-time on the Pi</span></div>
+        <p>The same pipeline on the live camera, uploads during practice, permanent handrail mount with PoE power, systemd service, Start/End session in the dashboard.</p>
+        <p class="exit"><b>Exit:</b> results appear within seconds of each dive; runs a whole practice unattended.</p></div>
+      <div class="phase"><div class="ph-head"><span class="ph-num">4</span><span class="ph-title">Mobile app</span></div>
+        <p>React Native: live view, session control, target editor, history.</p>
+        <p class="exit"><b>Exit:</b> the full product.</p></div>
+      <div class="phase optional"><div class="ph-head"><span class="ph-num">5</span><span class="ph-title">Optional: markerless</span></div>
+        <p>BlazePose cross-check, classical-CV orientation, or a custom model trained on clips collected in Phases 0–3.</p>
+        <p class="exit"><b>Exit:</b> accuracy close to the markers, without markers.</p></div>
+    </div>
+  </section>
 
   <section>
     <h2>Components</h2>
-    <p class="section-note">Seventeen classes — six data objects, one interface with two implementations, seven behavior classes, and one orchestrator — plus two entry scripts that wire them together.</p>
+    <p class="section-note">Twenty-four classes and four entry scripts. Three interfaces let the same pipeline run on recorded clips (Phase 1) and the live camera (Phase 3) without changes.</p>
+
+    <h3>Orchestrator and interfaces</h3>
     <div class="card-grid">
-      <div class="card core"><span class="tag">orchestrator</span><span class="name">CaptureService</span><p>run(), stop(). Coordinates every class through injected dependencies; syncs and refreshes the session on a background thread.</p></div>
-      <div class="card script"><span class="tag">script</span><span class="name">main.py</span><p>Composition root: loads calibration, builds every object, injects them into CaptureService. Run by systemd.</p></div>
-      <div class="card script"><span class="tag">script</span><span class="name">calibrate.py</span><p>Operator tool: lens calibration from checkerboard photos, board calibration from reference markers, then save.</p></div>
+      <div class="card core"><span class="tag">orchestrator · P1</span><span class="name">CaptureService</span><p>Runs the pipeline over any FrameSource and stores each attempt locally. No network code.</p></div>
+      <div class="card iface"><span class="tag">interface · P1</span><span class="name">FrameSource</span><p>start(), read() → Frame or nothing at clip end, stop().</p></div>
+      <div class="card iface"><span class="tag">interface · P1</span><span class="name">FootDetector</span><p>detect(frame) → list[FootKeypoints]; empty list when no foot is found.</p></div>
+      <div class="card iface"><span class="tag">interface · P1</span><span class="name">SessionProvider</span><p>current_session() → SessionContext or nothing; returns immediately, never waits on the network.</p></div>
+    </div>
 
-      <div class="card iface"><span class="tag">interface</span><span class="name">FootDetector</span><p>detect(frame) → list[FootKeypoints]. Empty list when no foot is found, so implementations are interchangeable.</p></div>
-      <div class="card"><span class="tag">implements FootDetector</span><span class="name">MarkerDetector</span><p>Primary. Finds the four DICT_4X4_50 markers; each marker's refined center becomes a heel or toe point.</p></div>
-      <div class="card"><span class="tag">implements FootDetector</span><span class="name">PoseDetector</span><p>Cross-check. BlazePose heel and foot_index landmarks; position only.</p></div>
+    <h3>Implementations</h3>
+    <div class="card-grid">
+      <div class="card"><span class="tag">FrameSource · P0, P1, P3</span><span class="name">CameraCapture</span><p>The only class that talks to the camera (Picamera2, 1440×1080, short exposure).</p></div>
+      <div class="card"><span class="tag">FrameSource · P1</span><span class="name">VideoFileSource</span><p>Plays a recorded clip back as frames with their original timestamps.</p></div>
+      <div class="card"><span class="tag">FootDetector · P1</span><span class="name">MarkerDetector</span><p>Primary. Four DICT_4X4_50 markers; each refined marker center becomes a heel or toe point.</p></div>
+      <div class="card"><span class="tag">FootDetector · P5</span><span class="name">PoseDetector</span><p>Optional cross-check: BlazePose heel and foot_index landmarks.</p></div>
+      <div class="card"><span class="tag">SessionProvider · P1</span><span class="name">FixedSession</span><p>The session read from a session folder, for processing that folder's clips.</p></div>
+      <div class="card"><span class="tag">SessionProvider · P2</span><span class="name">CloudSyncClient</span><p>The only class that talks to Supabase: uploads, plus a cached active session.</p></div>
+    </div>
 
-      <div class="card"><span class="tag">geometry</span><span class="name">CalibrationManager</span><p>Lens correction + homography. to_world(keypoints) converts heel and toe to mm, then computes the angle in board coordinates.</p></div>
-      <div class="card"><span class="tag">persistence</span><span class="name">CalibrationStore</span><p>save() / load() calibration data. Used only by the two scripts.</p></div>
-      <div class="card"><span class="tag">capture</span><span class="name">CameraCapture</span><p>Picamera2, 1440×1080, short exposure. start(), stop(), get_frame() → Frame.</p></div>
+    <h3>Behavior classes</h3>
+    <div class="card-grid">
+      <div class="card"><span class="tag">geometry · P1</span><span class="name">CalibrationManager</span><p>Lens correction + homography. to_world() converts heel and toe to mm, then computes the angle.</p></div>
+      <div class="card"><span class="tag">persistence · P1</span><span class="name">CalibrationStore</span><p>save() / load() calibration data.</p></div>
+      <div class="card"><span class="tag">event logic · P1</span><span class="name">AttemptEventDetector</span><p>Takeoff zone in board mm. Both feet in, then gone → AttemptTrigger.</p></div>
+      <div class="card"><span class="tag">image output · P1</span><span class="name">ThumbnailGenerator</span><p>Draws heel/toe points, foot lines, and angles on the last-contact frame.</p></div>
+      <div class="card"><span class="tag">local storage · P1</span><span class="name">LocalBuffer</span><p>SQLite: save(), get_session(), get_unsynced(), mark_synced().</p></div>
+      <div class="card"><span class="tag">recording · P1</span><span class="name">ClipRecorder</span><p>Keeps the last seconds in memory; saves a high-quality clip around each attempt.</p></div>
+      <div class="card"><span class="tag">reporting · P1</span><span class="name">ReportWriter</span><p>CSV + one-page summary per session, readable without the app.</p></div>
+      <div class="card"><span class="tag">sync · P2</span><span class="name">SyncWorker</span><p>Uploads pending attempts and refreshes the session cache on its own thread.</p></div>
+    </div>
 
-      <div class="card"><span class="tag">event logic</span><span class="name">AttemptEventDetector</span><p>Takeoff zone in board mm. Both feet in the zone, then gone → AttemptTrigger with the last-contact frame.</p></div>
-      <div class="card"><span class="tag">image output</span><span class="name">ThumbnailGenerator</span><p>generate(trigger) → thumbnail with heel/toe points, foot lines, and angles drawn on.</p></div>
-      <div class="card"><span class="tag">local storage</span><span class="name">LocalBuffer</span><p>SQLite. save(), get_unsynced(), mark_synced() — nothing lost when Wi-Fi drops.</p></div>
-      <div class="card"><span class="tag">network</span><span class="name">CloudSyncClient</span><p>The only class that talks to Supabase: uploads, thumbnails, fetch_active_session().</p></div>
-
+    <h3>Data objects</h3>
+    <div class="card-grid">
       <div class="card data"><span class="tag">data</span><span class="name">Frame</span><p>image, captured_at.</p></div>
       <div class="card data"><span class="tag">data · pixels</span><span class="name">FootKeypoints</span><p>foot_side, heel_px, toe_px, confidence, source.</p></div>
       <div class="card data"><span class="tag">data · board mm</span><span class="name">FootMeasurement</span><p>foot_side, heel_mm, toe_mm, angle_deg, confidence, source.</p></div>
       <div class="card data"><span class="tag">data</span><span class="name">AttemptTrigger</span><p>frame, keypoints {left, right}, measurements {left, right}.</p></div>
-      <div class="card data"><span class="tag">data</span><span class="name">SessionContext</span><p>session_id, diver_id, dive_type, fetched_at — set by the coach in the app.</p></div>
+      <div class="card data"><span class="tag">data</span><span class="name">SessionContext</span><p>session_id, diver_id, dive_type.</p></div>
       <div class="card data"><span class="tag">data</span><span class="name">AttemptRecord</span><p>attempt_id, captured_at, session/diver/dive (null = unassigned), left_foot, right_foot, thumbnail_path.</p></div>
+    </div>
+
+    <h3>Entry scripts</h3>
+    <div class="card-grid">
+      <div class="card script"><span class="tag">script · P0–1</span><span class="name">calibrate.py</span><p>Lens calibration from checkerboard photos, board calibration from reference markers.</p></div>
+      <div class="card script"><span class="tag">script · P1</span><span class="name">record.py</span><p>Creates a session folder (diver, dive type) and runs ClipRecorder during practice.</p></div>
+      <div class="card script"><span class="tag">script · P1</span><span class="name">process_clips.py</span><p>After practice: every clip through CaptureService, then ReportWriter; Phase 2 also uploads.</p></div>
+      <div class="card script"><span class="tag">script · P3</span><span class="name">main.py</span><p>Live: CaptureService on CameraCapture with CloudSyncClient, plus SyncWorker. Run by systemd.</p></div>
     </div>
   </section>
 
   <section>
     <h2>Class diagram</h2>
-    <p class="section-note">CaptureService depends on the FootDetector interface, never on a concrete detector. Detectors only know pixels; CalibrationManager is the single place pixels become board millimeters and angles.</p>
+    <p class="section-note">CaptureService only sees interfaces for frames, detection, and sessions. Swapping VideoFileSource for CameraCapture and FixedSession for CloudSyncClient is all Phase 3 changes in the pipeline.</p>
     <figure>
-      <svg viewBox="0 0 1300 610" role="img" aria-label="Class diagram. main.py loads calibration from CalibrationStore and builds CaptureService. CaptureService uses CameraCapture, the FootDetector interface, CalibrationManager, AttemptEventDetector, ThumbnailGenerator, LocalBuffer and CloudSyncClient. MarkerDetector and PoseDetector implement FootDetector and return FootKeypoints in pixels. CalibrationManager converts them to FootMeasurement in millimeters. AttemptEventDetector returns AttemptTrigger, LocalBuffer stores AttemptRecord, CloudSyncClient fetches SessionContext.">
+      <svg viewBox="0 0 1300 590" role="img" aria-label="Class diagram. CaptureService uses FrameSource, FootDetector and SessionProvider interfaces plus CalibrationManager, AttemptEventDetector, ThumbnailGenerator and LocalBuffer. CameraCapture and VideoFileSource implement FrameSource; MarkerDetector and PoseDetector implement FootDetector; FixedSession and CloudSyncClient implement SessionProvider. ClipRecorder records from CameraCapture. ReportWriter reads LocalBuffer. SyncWorker reads LocalBuffer and uploads through CloudSyncClient.">
         <defs>
           <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
           </marker>
         </defs>
 
-        <!-- top row -->
-        <rect class="box box-core" x="500" y="20" width="240" height="64" rx="6"/>
-        <text class="t-core" x="620" y="46" text-anchor="middle" font-size="13" font-weight="600">CaptureService</text>
-        <text class="sans muted" x="620" y="64" text-anchor="middle" font-size="10">run() · stop() · injected deps</text>
-
-        <rect class="box box-script" x="860" y="20" width="170" height="64" rx="6"/>
-        <text x="945" y="44" text-anchor="middle" font-size="10" letter-spacing="1" class="muted">«script»</text>
-        <text x="945" y="62" text-anchor="middle" font-size="12" font-weight="600">main.py</text>
-
-        <rect class="box" x="1110" y="20" width="180" height="64" rx="6"/>
-        <text x="1200" y="46" text-anchor="middle" font-size="12" font-weight="600">CalibrationStore</text>
-        <text x="1200" y="64" text-anchor="middle" font-size="10" class="muted">save() · load()</text>
-
-        <path class="edge" marker-end="url(#arrow)" d="M860,52 L742,52"/>
-        <text class="edge-label" x="801" y="44" text-anchor="middle">builds + injects</text>
-        <path class="edge" marker-end="url(#arrow)" d="M1030,52 L1108,52"/>
-        <text class="edge-label" x="1069" y="44" text-anchor="middle">load()</text>
+        <!-- orchestrator -->
+        <rect class="box box-core" x="520" y="20" width="240" height="64" rx="6"/>
+        <text class="t-core" x="640" y="46" text-anchor="middle" font-size="13" font-weight="600">CaptureService</text>
+        <text class="sans muted" x="640" y="64" text-anchor="middle" font-size="10">run() · stop() · no network code</text>
 
         <!-- row 2 -->
-        <rect class="box" x="10" y="170" width="160" height="78" rx="6"/>
-        <text x="90" y="202" text-anchor="middle" font-size="12" font-weight="600">CameraCapture</text>
-        <text x="90" y="222" text-anchor="middle" font-size="10" class="muted">get_frame()</text>
+        <rect class="box box-iface" x="40" y="170" width="160" height="70" rx="6"/>
+        <text class="t-iface" x="120" y="194" text-anchor="middle" font-size="10" letter-spacing="1">«interface»</text>
+        <text class="t-iface" x="120" y="212" text-anchor="middle" font-size="12" font-weight="600">FrameSource</text>
+        <text x="120" y="229" text-anchor="middle" font-size="10" class="muted">read()</text>
 
-        <rect class="box box-iface" x="190" y="170" width="160" height="78" rx="6"/>
-        <text class="t-iface" x="270" y="194" text-anchor="middle" font-size="10" letter-spacing="1">«interface»</text>
-        <text class="t-iface" x="270" y="212" text-anchor="middle" font-size="12" font-weight="600">FootDetector</text>
-        <text x="270" y="230" text-anchor="middle" font-size="10" class="muted">detect(frame)</text>
+        <rect class="box box-iface" x="320" y="170" width="160" height="70" rx="6"/>
+        <text class="t-iface" x="400" y="194" text-anchor="middle" font-size="10" letter-spacing="1">«interface»</text>
+        <text class="t-iface" x="400" y="212" text-anchor="middle" font-size="12" font-weight="600">FootDetector</text>
+        <text x="400" y="229" text-anchor="middle" font-size="10" class="muted">detect(frame)</text>
 
-        <rect class="box" x="370" y="170" width="180" height="78" rx="6"/>
-        <text x="460" y="198" text-anchor="middle" font-size="12" font-weight="600">CalibrationManager</text>
-        <text x="460" y="216" text-anchor="middle" font-size="10" class="muted">calibrate_lens/board()</text>
-        <text x="460" y="231" text-anchor="middle" font-size="10" class="muted">to_world()</text>
+        <rect class="box" x="500" y="170" width="170" height="70" rx="6"/>
+        <text x="585" y="200" text-anchor="middle" font-size="12" font-weight="600">CalibrationManager</text>
+        <text x="585" y="220" text-anchor="middle" font-size="10" class="muted">to_world()</text>
 
-        <rect class="box" x="570" y="170" width="190" height="78" rx="6"/>
-        <text x="665" y="202" text-anchor="middle" font-size="12" font-weight="600">AttemptEventDetector</text>
-        <text x="665" y="222" text-anchor="middle" font-size="10" class="muted">process()</text>
+        <rect class="box" x="685" y="170" width="170" height="70" rx="6"/>
+        <text x="770" y="200" text-anchor="middle" font-size="12" font-weight="600">AttemptEventDetector</text>
+        <text x="770" y="220" text-anchor="middle" font-size="10" class="muted">process()</text>
 
-        <rect class="box" x="780" y="170" width="170" height="78" rx="6"/>
-        <text x="865" y="202" text-anchor="middle" font-size="12" font-weight="600">ThumbnailGenerator</text>
-        <text x="865" y="222" text-anchor="middle" font-size="10" class="muted">generate(trigger)</text>
+        <rect class="box" x="870" y="170" width="150" height="70" rx="6"/>
+        <text x="945" y="200" text-anchor="middle" font-size="12" font-weight="600">ThumbnailGenerator</text>
+        <text x="945" y="220" text-anchor="middle" font-size="10" class="muted">generate()</text>
 
-        <rect class="box" x="970" y="170" width="150" height="78" rx="6"/>
-        <text x="1045" y="202" text-anchor="middle" font-size="12" font-weight="600">LocalBuffer</text>
-        <text x="1045" y="220" text-anchor="middle" font-size="10" class="muted">save()</text>
-        <text x="1045" y="234" text-anchor="middle" font-size="10" class="muted">get_unsynced()</text>
+        <rect class="box" x="1035" y="170" width="120" height="70" rx="6"/>
+        <text x="1095" y="200" text-anchor="middle" font-size="12" font-weight="600">LocalBuffer</text>
+        <text x="1095" y="220" text-anchor="middle" font-size="10" class="muted">save()</text>
 
-        <rect class="box" x="1140" y="170" width="150" height="78" rx="6"/>
-        <text x="1215" y="200" text-anchor="middle" font-size="12" font-weight="600">CloudSyncClient</text>
-        <text x="1215" y="218" text-anchor="middle" font-size="10" class="muted">upload()</text>
-        <text x="1215" y="232" text-anchor="middle" font-size="10" class="muted">fetch_active_session()</text>
+        <rect class="box box-iface" x="1168" y="170" width="126" height="70" rx="6"/>
+        <text class="t-iface" x="1231" y="194" text-anchor="middle" font-size="10" letter-spacing="1">«interface»</text>
+        <text class="t-iface" x="1231" y="212" text-anchor="middle" font-size="12" font-weight="600">SessionProvider</text>
+        <text x="1231" y="229" text-anchor="middle" font-size="10" class="muted">current_session()</text>
 
         <!-- CaptureService uses -->
-        <path class="edge" marker-end="url(#arrow)" d="M540,84 C470,120 250,140 90,168"/>
-        <path class="edge" marker-end="url(#arrow)" d="M565,84 C530,115 380,140 270,168"/>
-        <path class="edge" marker-end="url(#arrow)" d="M595,84 C580,115 500,140 460,168"/>
-        <path class="edge" marker-end="url(#arrow)" d="M630,84 L665,168"/>
-        <path class="edge" marker-end="url(#arrow)" d="M650,84 C700,115 820,140 865,168"/>
-        <path class="edge" marker-end="url(#arrow)" d="M675,84 C780,115 990,140 1045,168"/>
-        <path class="edge" marker-end="url(#arrow)" d="M700,84 C850,110 1150,140 1215,168"/>
+        <path class="edge" marker-end="url(#arrow)" d="M545,84 C470,120 260,140 120,168"/>
+        <path class="edge" marker-end="url(#arrow)" d="M570,84 C540,115 450,140 400,168"/>
+        <path class="edge" marker-end="url(#arrow)" d="M600,84 L586,168"/>
+        <path class="edge" marker-end="url(#arrow)" d="M680,84 C700,115 750,140 770,168"/>
+        <path class="edge" marker-end="url(#arrow)" d="M700,84 C780,115 900,140 945,168"/>
+        <path class="edge" marker-end="url(#arrow)" d="M720,84 C850,110 1050,140 1095,168"/>
+        <path class="edge" marker-end="url(#arrow)" d="M740,84 C900,105 1180,140 1231,168"/>
 
-        <!-- implementors -->
-        <rect class="box" x="150" y="310" width="140" height="64" rx="6"/>
-        <text x="220" y="337" text-anchor="middle" font-size="12" font-weight="600">MarkerDetector</text>
-        <text x="220" y="355" text-anchor="middle" font-size="10" class="muted">primary</text>
-        <rect class="box" x="300" y="310" width="130" height="64" rx="6"/>
-        <text x="365" y="337" text-anchor="middle" font-size="12" font-weight="600">PoseDetector</text>
-        <text x="365" y="355" text-anchor="middle" font-size="10" class="muted">cross-check</text>
-        <path class="edge-dashed" marker-end="url(#arrow)" d="M228,310 L252,250"/>
-        <path class="edge-dashed" marker-end="url(#arrow)" d="M357,310 L290,250"/>
-        <text class="edge-label" x="282" y="292" text-anchor="middle">implements</text>
+        <!-- row 3: implementations -->
+        <rect class="box" x="10" y="320" width="130" height="62" rx="6"/>
+        <text x="75" y="347" text-anchor="middle" font-size="12" font-weight="600">CameraCapture</text>
+        <text x="75" y="365" text-anchor="middle" font-size="10" class="muted">live · P0 P1 P3</text>
+        <rect class="box" x="150" y="320" width="140" height="62" rx="6"/>
+        <text x="220" y="347" text-anchor="middle" font-size="12" font-weight="600">VideoFileSource</text>
+        <text x="220" y="365" text-anchor="middle" font-size="10" class="muted">clips · P1</text>
+        <path class="edge-dashed" marker-end="url(#arrow)" d="M75,320 L105,242"/>
+        <path class="edge-dashed" marker-end="url(#arrow)" d="M220,320 L140,242"/>
+        <text class="edge-label" x="148" y="300" text-anchor="middle">implements</text>
 
-        <!-- value objects -->
-        <rect class="box box-data" x="15" y="450" width="150" height="56" rx="6"/>
-        <text class="t-data" x="90" y="474" text-anchor="middle" font-size="12" font-weight="600">Frame</text>
-        <text x="90" y="492" text-anchor="middle" font-size="10" class="muted">image, captured_at</text>
-        <path class="edge-dashed" marker-end="url(#arrow)" d="M90,248 L90,448"/>
-        <text class="edge-label" x="96" y="400">returns</text>
+        <rect class="box" x="300" y="320" width="130" height="62" rx="6"/>
+        <text x="365" y="347" text-anchor="middle" font-size="12" font-weight="600">MarkerDetector</text>
+        <text x="365" y="365" text-anchor="middle" font-size="10" class="muted">primary · P1</text>
+        <rect class="box" x="440" y="320" width="120" height="62" rx="6"/>
+        <text x="500" y="347" text-anchor="middle" font-size="12" font-weight="600">PoseDetector</text>
+        <text x="500" y="365" text-anchor="middle" font-size="10" class="muted">optional · P5</text>
+        <path class="edge-dashed" marker-end="url(#arrow)" d="M365,320 L390,242"/>
+        <path class="edge-dashed" marker-end="url(#arrow)" d="M500,320 L415,242"/>
+        <text class="edge-label" x="425" y="300" text-anchor="middle">implements</text>
 
-        <rect class="box box-data" x="185" y="450" width="190" height="56" rx="6"/>
-        <text class="t-data" x="280" y="474" text-anchor="middle" font-size="12" font-weight="600">FootKeypoints</text>
-        <text x="280" y="492" text-anchor="middle" font-size="10" class="muted">heel_px, toe_px</text>
-        <path class="edge-dashed" marker-end="url(#arrow)" d="M220,374 L258,448"/>
-        <path class="edge-dashed" marker-end="url(#arrow)" d="M365,374 L302,448"/>
+        <rect class="box" x="720" y="320" width="140" height="62" rx="6"/>
+        <text x="790" y="347" text-anchor="middle" font-size="12" font-weight="600">ReportWriter</text>
+        <text x="790" y="365" text-anchor="middle" font-size="10" class="muted">P1</text>
+        <path class="edge" marker-end="url(#arrow)" d="M860,340 L1060,244"/>
+        <text class="edge-label" x="930" y="330">reads</text>
 
-        <rect class="box box-data" x="390" y="450" width="165" height="56" rx="6"/>
-        <text class="t-data" x="472" y="474" text-anchor="middle" font-size="12" font-weight="600">FootMeasurement</text>
-        <text x="472" y="492" text-anchor="middle" font-size="10" class="muted">heel_mm, toe_mm, angle</text>
-        <path class="edge-dashed" marker-end="url(#arrow)" d="M465,248 L470,448"/>
-        <text class="edge-label" x="474" y="400">to_world()</text>
+        <rect class="box" x="1050" y="320" width="110" height="62" rx="6"/>
+        <text x="1105" y="347" text-anchor="middle" font-size="12" font-weight="600">FixedSession</text>
+        <text x="1105" y="365" text-anchor="middle" font-size="10" class="muted">P1</text>
+        <rect class="box" x="1170" y="320" width="125" height="62" rx="6"/>
+        <text x="1232" y="347" text-anchor="middle" font-size="11.5" font-weight="600">CloudSyncClient</text>
+        <text x="1232" y="365" text-anchor="middle" font-size="10" class="muted">P2+</text>
+        <path class="edge-dashed" marker-end="url(#arrow)" d="M1105,320 L1205,242"/>
+        <path class="edge-dashed" marker-end="url(#arrow)" d="M1232,320 L1235,242"/>
+        <text class="edge-label" x="1185" y="296" text-anchor="middle">implements</text>
 
-        <rect class="box box-data" x="575" y="450" width="180" height="56" rx="6"/>
-        <text class="t-data" x="665" y="474" text-anchor="middle" font-size="12" font-weight="600">AttemptTrigger</text>
-        <text x="665" y="492" text-anchor="middle" font-size="10" class="muted">last-contact frame</text>
-        <path class="edge-dashed" marker-end="url(#arrow)" d="M665,248 L665,448"/>
-        <text class="edge-label" x="671" y="400">returns</text>
+        <!-- row 4 -->
+        <rect class="box" x="10" y="450" width="130" height="62" rx="6"/>
+        <text x="75" y="477" text-anchor="middle" font-size="12" font-weight="600">ClipRecorder</text>
+        <text x="75" y="495" text-anchor="middle" font-size="10" class="muted">P1 · run by record.py</text>
+        <path class="edge" marker-end="url(#arrow)" d="M75,450 L75,384"/>
+        <text class="edge-label" x="82" y="422">records from</text>
 
-        <rect class="box box-data" x="790" y="450" width="300" height="56" rx="6"/>
-        <text class="t-data" x="940" y="474" text-anchor="middle" font-size="12" font-weight="600">AttemptRecord</text>
-        <text x="940" y="492" text-anchor="middle" font-size="10" class="muted">built by CaptureService · left_foot, right_foot</text>
-        <path class="edge-dashed" marker-end="url(#arrow)" d="M1045,248 L1045,448"/>
-        <text class="edge-label" x="1051" y="330">stores</text>
-
-        <rect class="box box-data" x="1120" y="450" width="170" height="56" rx="6"/>
-        <text class="t-data" x="1205" y="474" text-anchor="middle" font-size="12" font-weight="600">SessionContext</text>
-        <text x="1205" y="492" text-anchor="middle" font-size="10" class="muted">session, diver, dive</text>
-        <path class="edge-dashed" marker-end="url(#arrow)" d="M1215,248 L1215,448"/>
-        <text class="edge-label" x="1209" y="400" text-anchor="end">fetches</text>
+        <rect class="box" x="1150" y="450" width="140" height="62" rx="6"/>
+        <text x="1220" y="477" text-anchor="middle" font-size="12" font-weight="600">SyncWorker</text>
+        <text x="1220" y="495" text-anchor="middle" font-size="10" class="muted">P2+ · own thread</text>
+        <path class="edge" marker-end="url(#arrow)" d="M1232,450 L1232,384"/>
+        <text class="edge-label" x="1226" y="430" text-anchor="end">uploads via</text>
+        <path class="edge" marker-end="url(#arrow)" d="M1150,475 C1010,470 1000,300 1070,244"/>
+        <text class="edge-label" x="1140" y="506" text-anchor="end">reads pending</text>
 
         <!-- legend -->
-        <rect class="box box-iface" x="300" y="560" width="18" height="14" rx="2"/>
-        <text x="324" y="571" font-size="10" class="muted">interface</text>
-        <rect class="box box-data" x="400" y="560" width="18" height="14" rx="2"/>
-        <text x="424" y="571" font-size="10" class="muted">data object</text>
-        <rect class="box box-script" x="510" y="560" width="18" height="14" rx="2"/>
-        <text x="534" y="571" font-size="10" class="muted">script</text>
-        <path class="edge" d="M590,567 L620,567" marker-end="url(#arrow)"/>
-        <text x="626" y="571" font-size="10" class="muted">calls</text>
-        <path class="edge-dashed" d="M680,567 L710,567" marker-end="url(#arrow)"/>
-        <text x="716" y="571" font-size="10" class="muted">returns / produces / implements</text>
+        <rect class="box box-iface" x="330" y="552" width="18" height="14" rx="2"/>
+        <text x="354" y="563" font-size="10" class="muted">interface</text>
+        <path class="edge" d="M440,559 L470,559" marker-end="url(#arrow)"/>
+        <text x="476" y="563" font-size="10" class="muted">uses</text>
+        <path class="edge-dashed" d="M530,559 L560,559" marker-end="url(#arrow)"/>
+        <text x="566" y="563" font-size="10" class="muted">implements</text>
+        <text x="670" y="563" font-size="10" class="muted">P1 = phase where the class is first built</text>
       </svg>
-      <figcaption>main.py is the only place that reads calibration from disk; calibrate.py (not drawn) writes it. CaptureService only sees the FootDetector interface, so swapping MarkerDetector for PoseDetector, or adding a custom-trained detector later, needs no change to CaptureService.</figcaption>
+      <figcaption>Data objects (Frame, FootKeypoints, FootMeasurement, AttemptTrigger, SessionContext, AttemptRecord) are left out here; they appear in the call sequences below. Scripts build these objects and pass them in, so each class can be tested on its own.</figcaption>
     </figure>
   </section>
 
   <section>
     <h2>Call sequences</h2>
-    <p class="section-note">Three flows: the per-frame loop, what happens once an attempt is detected plus the background sync, and calibration followed by startup.</p>
+    <p class="section-note">The per-frame pipeline and attempt handling are identical in every phase. What changes is which implementation is plugged in and which script runs them.</p>
 
     <figure>
-      <svg viewBox="0 0 930 390" role="img" aria-label="Per-frame loop. CaptureService gets a Frame from CameraCapture, gets FootKeypoints in pixels from FootDetector, converts each foot with CalibrationManager.to_world into a FootMeasurement in millimeters with an angle, then passes everything to AttemptEventDetector.process, which returns an AttemptTrigger or nothing.">
+      <svg viewBox="0 0 930 390" role="img" aria-label="Per-frame pipeline. CaptureService reads a Frame from the FrameSource, gets FootKeypoints in pixels from FootDetector, converts each foot with CalibrationManager.to_world into a FootMeasurement in millimeters with an angle, then passes everything to AttemptEventDetector.process, which returns an AttemptTrigger or nothing.">
         <rect class="lane-head" x="15" y="20" width="160" height="34" rx="5"/><text class="lane-text" x="95" y="42" text-anchor="middle" font-size="12">CaptureService</text>
-        <rect class="lane-head" x="205" y="20" width="160" height="34" rx="5"/><text class="lane-text" x="285" y="42" text-anchor="middle" font-size="12">CameraCapture</text>
+        <rect class="lane-head" x="205" y="20" width="160" height="34" rx="5"/><text class="lane-text" x="285" y="42" text-anchor="middle" font-size="12">FrameSource</text>
         <rect class="lane-head" x="395" y="20" width="160" height="34" rx="5"/><text class="lane-text" x="475" y="42" text-anchor="middle" font-size="12">FootDetector</text>
         <rect class="lane-head" x="580" y="20" width="170" height="34" rx="5"/><text class="lane-text" x="665" y="42" text-anchor="middle" font-size="12">CalibrationManager</text>
         <rect class="lane-head" x="775" y="20" width="140" height="34" rx="5"/><text class="lane-text" x="845" y="35" text-anchor="middle" font-size="11">AttemptEvent</text><text class="lane-text" x="845" y="48" text-anchor="middle" font-size="11">Detector</text>
@@ -264,7 +310,7 @@
         <line class="lifeline" x1="845" y1="54" x2="845" y2="375"/>
 
         <path class="edge" marker-end="url(#arrow)" d="M95,82 L283,82"/>
-        <text class="edge-label" x="190" y="76" text-anchor="middle">get_frame()</text>
+        <text class="edge-label" x="190" y="76" text-anchor="middle">read()</text>
         <path class="edge-dashed" marker-end="url(#arrow)" d="M285,104 L97,104"/>
         <text class="edge-label" x="190" y="120" text-anchor="middle">Frame</text>
 
@@ -284,21 +330,21 @@
         <text class="edge-label" x="470" y="322" text-anchor="middle">AttemptTrigger, or nothing</text>
 
         <rect class="frame-box" x="55" y="336" width="830" height="30" rx="4"/>
-        <text class="sans muted" x="72" y="355" font-size="11">loops at the camera frame rate · most frames return nothing → back to get_frame()</text>
+        <text class="sans muted" x="72" y="355" font-size="11">repeats per frame · VideoFileSource: until the clip ends · CameraCapture: until stop()</text>
       </svg>
-      <figcaption>Runs continuously. Converting both points before computing the angle is what keeps perspective from skewing the ±1° measurement.</figcaption>
+      <figcaption>Converting both points to millimeters before computing the angle keeps perspective from skewing the ±1° measurement.</figcaption>
     </figure>
 
     <figure>
-      <svg viewBox="0 0 930 560" role="img" aria-label="Attempt and sync. On a trigger, CaptureService asks ThumbnailGenerator for a thumbnail, builds an AttemptRecord with the cached session, and saves it to LocalBuffer. Separately, a background thread checks connectivity; if online it fetches the active session, gets unsynced records, uploads each thumbnail and record, and marks them synced.">
+      <svg viewBox="0 0 930 270" role="img" aria-label="Attempt handling. On an AttemptTrigger, CaptureService gets a thumbnail from ThumbnailGenerator, the current session from SessionProvider, builds an AttemptRecord, and saves it to LocalBuffer.">
         <rect class="lane-head" x="15" y="20" width="160" height="34" rx="5"/><text class="lane-text" x="95" y="42" text-anchor="middle" font-size="12">CaptureService</text>
         <rect class="lane-head" x="245" y="20" width="170" height="34" rx="5"/><text class="lane-text" x="330" y="42" text-anchor="middle" font-size="12">ThumbnailGenerator</text>
-        <rect class="lane-head" x="490" y="20" width="150" height="34" rx="5"/><text class="lane-text" x="565" y="42" text-anchor="middle" font-size="12">LocalBuffer</text>
-        <rect class="lane-head" x="720" y="20" width="160" height="34" rx="5"/><text class="lane-text" x="800" y="42" text-anchor="middle" font-size="12">CloudSyncClient</text>
-        <line class="lifeline" x1="95" y1="54" x2="95" y2="545"/>
-        <line class="lifeline" x1="330" y1="54" x2="330" y2="545"/>
-        <line class="lifeline" x1="565" y1="54" x2="565" y2="545"/>
-        <line class="lifeline" x1="800" y1="54" x2="800" y2="545"/>
+        <rect class="lane-head" x="485" y="20" width="160" height="34" rx="5"/><text class="lane-text" x="565" y="42" text-anchor="middle" font-size="12">SessionProvider</text>
+        <rect class="lane-head" x="725" y="20" width="150" height="34" rx="5"/><text class="lane-text" x="800" y="42" text-anchor="middle" font-size="12">LocalBuffer</text>
+        <line class="lifeline" x1="95" y1="54" x2="95" y2="255"/>
+        <line class="lifeline" x1="330" y1="54" x2="330" y2="255"/>
+        <line class="lifeline" x1="565" y1="54" x2="565" y2="255"/>
+        <line class="lifeline" x1="800" y1="54" x2="800" y2="255"/>
 
         <text class="sans muted" x="105" y="76" font-size="10">on AttemptTrigger:</text>
         <path class="edge" marker-end="url(#arrow)" d="M95,96 L328,96"/>
@@ -306,48 +352,63 @@
         <path class="edge-dashed" marker-end="url(#arrow)" d="M330,118 L97,118"/>
         <text class="edge-label" x="212" y="134" text-anchor="middle">thumbnail_path</text>
 
-        <text class="sans muted" x="105" y="162" font-size="10">builds AttemptRecord with the cached session (or unassigned)</text>
+        <path class="edge" marker-end="url(#arrow)" d="M95,160 L563,160"/>
+        <text class="edge-label" x="330" y="154" text-anchor="middle">current_session()</text>
+        <path class="edge-dashed" marker-end="url(#arrow)" d="M565,182 L97,182"/>
+        <text class="edge-label" x="330" y="198" text-anchor="middle">SessionContext, or nothing (= unassigned)</text>
 
-        <path class="edge" marker-end="url(#arrow)" d="M95,190 L563,190"/>
-        <text class="edge-label" x="330" y="184" text-anchor="middle">save(record)</text>
-
-        <line class="divider" x1="20" y1="218" x2="910" y2="218"/>
-        <text class="sans muted" x="105" y="238" font-size="10">background thread, every few seconds:</text>
-
-        <path class="edge" marker-end="url(#arrow)" d="M95,258 L798,258"/>
-        <text class="edge-label" x="450" y="252" text-anchor="middle">is_online()</text>
-        <path class="edge-dashed" marker-end="url(#arrow)" d="M800,280 L97,280"/>
-        <text class="edge-label" x="450" y="296" text-anchor="middle">bool</text>
-
-        <rect class="frame-box" x="60" y="310" width="840" height="225" rx="4"/>
-        <text class="sans muted" x="72" y="326" font-size="10">if online</text>
-
-        <path class="edge" marker-end="url(#arrow)" d="M95,346 L798,346"/>
-        <text class="edge-label" x="450" y="340" text-anchor="middle">fetch_active_session()</text>
-        <path class="edge-dashed" marker-end="url(#arrow)" d="M800,368 L97,368"/>
-        <text class="edge-label" x="450" y="384" text-anchor="middle">SessionContext, or none — cached for new attempts</text>
-
-        <path class="edge" marker-end="url(#arrow)" d="M95,410 L563,410"/>
-        <text class="edge-label" x="330" y="404" text-anchor="middle">get_unsynced()</text>
-        <path class="edge-dashed" marker-end="url(#arrow)" d="M565,430 L97,430"/>
-        <text class="edge-label" x="330" y="446" text-anchor="middle">pending records</text>
-
-        <path class="edge" marker-end="url(#arrow)" d="M95,468 L798,468"/>
-        <text class="edge-label" x="450" y="462" text-anchor="middle">upload_thumbnail(path) → url, then upload(record, url)</text>
-
-        <path class="edge" marker-end="url(#arrow)" d="M95,510 L563,510"/>
-        <text class="edge-label" x="330" y="504" text-anchor="middle">mark_synced(attempt_id)</text>
+        <path class="edge" marker-end="url(#arrow)" d="M95,234 L798,234"/>
+        <text class="edge-label" x="450" y="228" text-anchor="middle">save(AttemptRecord)</text>
       </svg>
-      <figcaption>Every attempt is saved locally before any network call, so a dropped connection never loses a reading. Network work runs on its own thread so it never stalls frame capture. With no active session, attempts are saved as unassigned and the coach assigns them later in the app.</figcaption>
+      <figcaption>FixedSession answers from the session folder; CloudSyncClient answers from its cache. Neither waits on the network, so attempt handling never stalls the frame loop.</figcaption>
     </figure>
 
     <figure>
-      <svg viewBox="0 0 930 470" role="img" aria-label="Calibration and startup. The operator gives calibrate.py checkerboard photos for calibrate_lens and places temporary board markers for calibrate_board; calibrate.py gets the data from CalibrationManager and saves it with CalibrationStore. On every startup main.py loads the data from CalibrationStore and builds a CalibrationManager with from_data, which it injects into CaptureService.">
+      <svg viewBox="0 0 930 400" role="img" aria-label="After practice, Phases 1 and 2. process_clips.py runs CaptureService on each clip with VideoFileSource and FixedSession, then asks ReportWriter for the session report. In Phase 2 it then calls SyncWorker.sync_once, which uploads pending attempts through CloudSyncClient.">
+        <rect class="lane-head" x="15" y="20" width="160" height="34" rx="5"/><text class="lane-text" x="95" y="42" text-anchor="middle" font-size="12">process_clips.py</text>
+        <rect class="lane-head" x="220" y="20" width="160" height="34" rx="5"/><text class="lane-text" x="300" y="42" text-anchor="middle" font-size="12">CaptureService</text>
+        <rect class="lane-head" x="430" y="20" width="150" height="34" rx="5"/><text class="lane-text" x="505" y="42" text-anchor="middle" font-size="12">ReportWriter</text>
+        <rect class="lane-head" x="630" y="20" width="150" height="34" rx="5"/><text class="lane-text" x="705" y="42" text-anchor="middle" font-size="12">SyncWorker</text>
+        <rect class="lane-head" x="800" y="20" width="122" height="34" rx="5"/><text class="lane-text" x="861" y="42" text-anchor="middle" font-size="11">CloudSyncClient</text>
+        <line class="lifeline" x1="95" y1="54" x2="95" y2="385"/>
+        <line class="lifeline" x1="300" y1="54" x2="300" y2="385"/>
+        <line class="lifeline" x1="505" y1="54" x2="505" y2="385"/>
+        <line class="lifeline" x1="705" y1="54" x2="705" y2="385"/>
+        <line class="lifeline" x1="861" y1="54" x2="861" y2="385"/>
+
+        <rect class="frame-box" x="40" y="66" width="300" height="96" rx="4"/>
+        <text class="sans muted" x="52" y="82" font-size="10">for each clip in the session folder</text>
+        <path class="edge" marker-end="url(#arrow)" d="M95,108 L298,108"/>
+        <text class="edge-label" x="197" y="102" text-anchor="middle">run() on VideoFileSource(clip)</text>
+        <path class="edge-dashed" marker-end="url(#arrow)" d="M300,132 L97,132"/>
+        <text class="edge-label" x="197" y="148" text-anchor="middle">attempts saved to LocalBuffer</text>
+
+        <path class="edge" marker-end="url(#arrow)" d="M95,190 L503,190"/>
+        <text class="edge-label" x="300" y="184" text-anchor="middle">write_session_report(session_id)</text>
+        <path class="edge-dashed" marker-end="url(#arrow)" d="M505,212 L97,212"/>
+        <text class="edge-label" x="300" y="228" text-anchor="middle">CSV + one-page summary</text>
+
+        <line class="divider" x1="20" y1="248" x2="910" y2="248"/>
+        <text class="sans muted" x="105" y="266" font-size="10">Phase 2 and later:</text>
+
+        <path class="edge" marker-end="url(#arrow)" d="M95,290 L703,290"/>
+        <text class="edge-label" x="400" y="284" text-anchor="middle">sync_once()</text>
+        <path class="edge" marker-end="url(#arrow)" d="M705,322 L859,322"/>
+        <text class="edge-label" x="782" y="316" text-anchor="middle">upload each</text>
+        <text class="sans muted" x="715" y="346" font-size="10">marks each uploaded attempt as synced</text>
+
+        <text class="sans muted" x="105" y="374" font-size="10">then deletes the clips, unless athlete consent covers keeping them</text>
+      </svg>
+      <figcaption>The coach's Phase 1 deliverable is the session report. Phase 2 adds only the upload step at the end; the pipeline itself is unchanged.</figcaption>
+    </figure>
+
+    <figure>
+      <svg viewBox="0 0 930 470" role="img" aria-label="Calibration and startup. The operator gives calibrate.py checkerboard photos for calibrate_lens and places temporary board markers for calibrate_board; calibrate.py gets the data from CalibrationManager and saves it with CalibrationStore. On every run, process_clips.py or main.py loads the data and builds a CalibrationManager with from_data.">
         <rect class="lane-head" x="15" y="20" width="120" height="34" rx="5"/><text class="lane-text" x="75" y="42" text-anchor="middle" font-size="12">Operator</text>
         <rect class="lane-head" x="175" y="20" width="150" height="34" rx="5"/><text class="lane-text" x="250" y="42" text-anchor="middle" font-size="12">calibrate.py</text>
         <rect class="lane-head" x="355" y="20" width="180" height="34" rx="5"/><text class="lane-text" x="445" y="42" text-anchor="middle" font-size="12">CalibrationManager</text>
         <rect class="lane-head" x="560" y="20" width="160" height="34" rx="5"/><text class="lane-text" x="640" y="42" text-anchor="middle" font-size="12">CalibrationStore</text>
-        <rect class="lane-head" x="765" y="20" width="140" height="34" rx="5"/><text class="lane-text" x="835" y="42" text-anchor="middle" font-size="12">main.py</text>
+        <rect class="lane-head" x="755" y="20" width="160" height="34" rx="5"/><text class="lane-text" x="835" y="35" text-anchor="middle" font-size="11">process_clips.py</text><text class="lane-text" x="835" y="48" text-anchor="middle" font-size="11">or main.py</text>
         <line class="lifeline" x1="75" y1="54" x2="75" y2="455"/>
         <line class="lifeline" x1="250" y1="54" x2="250" y2="455"/>
         <line class="lifeline" x1="445" y1="54" x2="445" y2="455"/>
@@ -373,7 +434,7 @@
         <text class="edge-label" x="445" y="274" text-anchor="middle">save(calibration_data)</text>
 
         <line class="divider" x1="20" y1="306" x2="910" y2="306"/>
-        <text class="sans muted" x="900" y="326" font-size="10" text-anchor="end">on every startup:</text>
+        <text class="sans muted" x="905" y="326" font-size="10" text-anchor="end">every run:</text>
 
         <path class="edge" marker-end="url(#arrow)" d="M835,344 L642,344"/>
         <text class="edge-label" x="738" y="338" text-anchor="middle">load()</text>
@@ -383,43 +444,32 @@
         <path class="edge" marker-end="url(#arrow)" d="M835,404 L447,404"/>
         <text class="edge-label" x="640" y="398" text-anchor="middle">from_data(calibration_data)</text>
         <path class="edge-dashed" marker-end="url(#arrow)" d="M445,426 L833,426"/>
-        <text class="edge-label" x="640" y="442" text-anchor="middle">CalibrationManager → injected into CaptureService</text>
+        <text class="edge-label" x="640" y="442" text-anchor="middle">CalibrationManager → passed into CaptureService</text>
       </svg>
-      <figcaption>Lens calibration is one-time. Board calibration runs under a static load and again whenever the camera mount moves; the board markers are temporary or sit on the board's side edges, never on the walking surface.</figcaption>
+      <figcaption>Lens calibration is one-time. Board calibration runs under a static load, and again whenever the camera moves — every session while the mount is temporary (Phases 0–2). Board markers are temporary or sit on the board's side edges, never on the walking surface.</figcaption>
     </figure>
   </section>
 
   <section>
-    <h2>Build order</h2>
-    <p class="section-note">Bottom-up: prove each piece on its own, pass the bench accuracy test before any attempt logic exists, and wire CaptureService together last, when every dependency it receives already works.</p>
-
-    <div class="milestone">Milestone 1 — see a frame, measure a foot on the bench</div>
+    <h2>Phase 1 build order</h2>
+    <p class="section-note">Phase 0 is notebook work; the parts that pass become these classes. Each step is tested on the clips recorded in Phase 0, so most of Phase 1 happens at a desk.</p>
     <ol class="build-order">
-      <li><span class="num">1</span><span class="step-name">Frame + CameraCapture</span><span class="step-why">Set the IMX296 lines in config.txt, check with rpicam-hello, then grab frames through Picamera2.</span></li>
-      <li><span class="num">2</span><span class="step-name">CalibrationManager (lens) + CalibrationStore + calibrate.py</span><span class="step-why">Checkerboard photos at a desk; confirm straight lines come out straight after correction.</span></li>
-      <li><span class="num">3</span><span class="step-name">FootKeypoints + FootDetector + MarkerDetector</span><span class="step-why">A printed sheet with the four markers: confirm the IDs map to the right heel/toe and the centers are stable frame to frame.</span></li>
-      <li><span class="num">4</span><span class="step-name">CalibrationManager (board) + FootMeasurement + to_world()</span><span class="step-why">A printed grid with known points stands in for the board; check millimeter readings against a ruler.</span></li>
-      <li class="gate"><span class="num">5</span><span class="step-name">Bench accuracy test</span><span class="step-why">Printed foot template rotated in 1° steps and moved to known positions. Pass: angle error under 1°, position within the coach's tolerance. Don't continue until it passes.</span></li>
+      <li><span class="num">1</span><span class="step-name">Frame + FrameSource + CameraCapture + VideoFileSource</span><span class="step-why">Read a Phase 0 clip and the live camera through the same interface.</span></li>
+      <li><span class="num">2</span><span class="step-name">CalibrationManager + CalibrationStore + calibrate.py</span><span class="step-why">Port the notebook's lens and board calibration; results should match the notebook.</span></li>
+      <li><span class="num">3</span><span class="step-name">FootKeypoints + FootDetector + MarkerDetector</span><span class="step-why">Run on Phase 0 clips; marker centers should match the notebook's.</span></li>
+      <li class="gate"><span class="num">4</span><span class="step-name">FootMeasurement + to_world() — re-run the bench test</span><span class="step-why">The classes must reproduce the Phase 0 bench result: angle error under 1°. Don't continue until they do.</span></li>
+      <li><span class="num">5</span><span class="step-name">AttemptTrigger + AttemptEventDetector</span><span class="step-why">On the Phase 0 pool clips: exactly one trigger per dive.</span></li>
+      <li><span class="num">6</span><span class="step-name">ThumbnailGenerator</span><span class="step-why">The overlay lines up with the feet on real frames.</span></li>
+      <li><span class="num">7</span><span class="step-name">SessionContext + SessionProvider + FixedSession + AttemptRecord</span><span class="step-why">Small data classes and the session-folder reader.</span></li>
+      <li><span class="num">8</span><span class="step-name">LocalBuffer</span><span class="step-why">Save and read back records in a throwaway SQLite file.</span></li>
+      <li><span class="num">9</span><span class="step-name">CaptureService + process_clips.py</span><span class="step-why">The full offline run over recorded clips, end to end.</span></li>
+      <li><span class="num">10</span><span class="step-name">ClipRecorder + record.py</span><span class="step-why">Record a real practice: one high-quality clip per attempt.</span></li>
+      <li><span class="num">11</span><span class="step-name">ReportWriter</span><span class="step-why">The first session report goes to the coach — Phase 1 is done.</span></li>
     </ol>
-
-    <div class="milestone">Milestone 2 — recognize an attempt</div>
-    <ol class="build-order">
-      <li><span class="num">6</span><span class="step-name">AttemptTrigger + AttemptEventDetector</span><span class="step-why">Feed scripted sequences of fake measurements (feet in the zone, then gone) and check one trigger per attempt.</span></li>
-      <li><span class="num">7</span><span class="step-name">ThumbnailGenerator</span><span class="step-why">One saved frame and a fake trigger; confirm the overlay lines up with the feet.</span></li>
-      <li><span class="num">8</span><span class="step-name">AttemptRecord + SessionContext</span><span class="step-why">Plain data classes, quick once the measurements exist.</span></li>
-    </ol>
-
-    <div class="milestone">Milestone 3 — persist and sync</div>
-    <ol class="build-order">
-      <li><span class="num">9</span><span class="step-name">LocalBuffer</span><span class="step-why">Save and read back fake records in a throwaway SQLite file.</span></li>
-      <li><span class="num">10</span><span class="step-name">Supabase tables + row-level security + CloudSyncClient</span><span class="step-why">Upload dummy records and thumbnails; read a session row created by hand. Keep the key in .env, out of git.</span></li>
-    </ol>
-
-    <div class="milestone">Milestone 4 — integrate and deploy</div>
-    <ol class="build-order">
-      <li><span class="num">11</span><span class="step-name">CaptureService + main.py</span><span class="step-why">Wire everything together, with sync and session refresh on a background thread. Bugs here are almost always wiring, since every part was tested alone.</span></li>
-      <li><span class="num">12</span><span class="step-name">systemd service + poolside trial</span><span class="step-why">Start on boot, restart on crash. First trial only with pool and coach approval, and with the boom clear of the diver's path.</span></li>
-      <li><span class="num">13</span><span class="step-name">PoseDetector</span><span class="step-why">The markerless cross-check, added once the primary path works end to end.</span></li>
-    </ol>
+    <ul class="later">
+      <li><b>Phase 2 adds</b> Supabase tables with row-level security, CloudSyncClient, SyncWorker, and the Streamlit dashboard.</li>
+      <li><b>Phase 3 adds</b> main.py, the systemd service, the permanent mount, and PoE — no new pipeline classes.</li>
+      <li><b>Phase 4 adds</b> the React Native app. <b>Phase 5 adds</b> PoseDetector or another markerless detector.</li>
+    </ul>
   </section>
 </div>
