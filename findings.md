@@ -293,7 +293,7 @@ Principle: **Pi senses, Cloud stores, Dashboard/App computes and presents.**
 - **Phase 1:** Python classes and dataclasses, one abstract base class (`FrameSource`); SQLite.
 - **Phase 2:** Supabase and `supabase-py`; Streamlit.
 - **Future work:** `systemd`, Tailscale (Phase 3); React Native (Phase 4); MediaPipe, classical CV (Phase 5).
-- See `reading-list.md` for links. *(The reading list still needs the review's changes: drop "Physical Computing", add Git, Linux command line, and solvePnP readings, and move OpenCV links to 4.x.)*
+- See `reading-list.md` for links, ordered by phase.
 
 ## Security & Privacy
 - **Supabase key on the Pi (Phase 2+):** a restricted key with row-level security that only allows inserting attempts, uploading thumbnails, and reading the active session — never the service-role key. It lives in a `.env` file listed in `.gitignore`; never commit it (this repo is on GitHub).
@@ -301,7 +301,7 @@ Principle: **Pi senses, Cloud stores, Dashboard/App computes and presents.**
 
 ## Software Architecture (Pi side, revised 2026-10-18)
 
-*`pi-side-design.html` predates this review: it still shows three interfaces, the flat board mapping, and 24 classes. Update pending.*
+**Visual design doc:** phases, components, class diagram, call sequences, and the Phase 1 build order — `pi-side-design.html` in this repo, published at https://claude.ai/artifact/WgcJtuM2NdzgV3FbFQs9vv
 
 **Design principles:**
 - **Add an interface only when a second implementation exists (issue 10).** `FrameSource` qualifies in Phase 1: frames come from recorded clips and from the live camera. Detection and sessions each have one implementation until much later, so they start as plain classes and become interfaces when the second implementation arrives (`SessionProvider` in Phase 3, `FootDetector` in Phase 5). In Python that change is small.
@@ -386,4 +386,3 @@ React Native, after Phase 3: live view, session control, target editor, history 
 - **Phase 0 answers:** marker durability on wet skin and glare; handling a rising heel (equal-height markers vs. per-marker height estimate); board-marker placement and approval; camera position and lens from the geometry worksheet; clip storage and write speed on the Pi 5.
 - Attempt-detection thresholds — tune on Phase 0–1 footage.
 - On arrival: camera cable length.
-- Reading list and `pi-side-design.html` still need the review's changes.
